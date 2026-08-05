@@ -13,8 +13,18 @@ import {
 import { DateRangeDto } from "../../../common/dto/date-range.dto";
 import { SortOrder } from "../../../common/dto/pagination.dto";
 
-const toArray = ({ value }: { value: unknown }): unknown[] =>
-  value == null ? [] : Array.isArray(value) ? value : [value];
+const toArray = ({
+  value,
+  obj,
+  key,
+}: {
+  value: unknown;
+  obj?: Record<string, unknown>;
+  key: string;
+}): unknown[] => {
+  const actual = value ?? obj?.[`${key}[]`];
+  return actual == null ? [] : Array.isArray(actual) ? actual : [actual];
+};
 
 export enum TrendGranularity {
   DAY = "day",

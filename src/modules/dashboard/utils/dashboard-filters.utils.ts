@@ -23,7 +23,10 @@ export function applyFilters(
       venueIds: filters.venueIds,
     });
   }
-  if (filters.categoryIds?.length || filters.search) {
+  const hasSkuAlias = qb.expressionMap.joinAttributes.some(
+    (join) => join.alias && join.alias.name === "sku",
+  );
+  if ((filters.categoryIds?.length || filters.search) && !hasSkuAlias) {
     qb.leftJoin("t.sku", "sku");
   }
   if (filters.categoryIds?.length) {
