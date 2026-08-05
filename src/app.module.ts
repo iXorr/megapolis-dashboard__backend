@@ -5,6 +5,7 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { typeOrmConfig } from "./config/database.config";
 import { CategoriesModule } from "./modules/categories/categories.module";
+import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { SkusModule } from "./modules/skus/skus.module";
 import { VenuesModule } from "./modules/venues/venues.module";
 
@@ -15,6 +16,7 @@ import { VenuesModule } from "./modules/venues/venues.module";
     VenuesModule,
     CategoriesModule,
     SkusModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
