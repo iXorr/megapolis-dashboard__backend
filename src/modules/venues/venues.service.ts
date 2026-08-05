@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { FindManyOptions, ILike, Repository } from "typeorm";
 import { Venue } from "../../database/entities/venue.entity";
-import { CreateVenueDto, QueryVenuesDto } from "./dto/venue.dto";
+import { QueryVenuesDto } from "./dto/venue.dto";
 
 import { isValidUUID } from "../../common/utils/uuid.utils";
 
@@ -61,11 +61,4 @@ export class VenuesService {
     return rows.map((r) => r.type);
   }
 
-  async create(dto: CreateVenueDto): Promise<Venue> {
-    const venue = this.venueRepo.create({
-      ...dto,
-      openedAt: dto.openedAt ? new Date(dto.openedAt) : null,
-    });
-    return this.venueRepo.save(venue);
-  }
 }

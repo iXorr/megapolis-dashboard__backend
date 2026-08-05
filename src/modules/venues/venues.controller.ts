@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Venue } from "../../database/entities/venue.entity";
-import { CreateVenueDto, QueryVenuesDto } from "./dto/venue.dto";
+import { QueryVenuesDto } from "./dto/venue.dto";
 import { VenuesService } from "./venues.service";
 
 @ApiTags("Venues")
@@ -28,11 +28,5 @@ export class VenuesController {
   @ApiOperation({ summary: "Детальная информация о заведении" })
   findOne(@Param("id") id: string): Promise<Venue> {
     return this.venuesService.findOne(id);
-  }
-
-  @Post()
-  @ApiOperation({ summary: "Создать заведение" })
-  create(@Body() dto: CreateVenueDto): Promise<Venue> {
-    return this.venuesService.create(dto);
   }
 }
