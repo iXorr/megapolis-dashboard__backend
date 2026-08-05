@@ -23,17 +23,18 @@ export function applyFilters(
       venueIds: filters.venueIds,
     });
   }
+  if (filters.categoryIds?.length || filters.search) {
+    qb.leftJoin("t.sku", "sku");
+  }
   if (filters.categoryIds?.length) {
-    qb.leftJoin("t.sku", "sku").andWhere(
-      "sku.categoryId IN (:...categoryIds)",
-      { categoryIds: filters.categoryIds },
-    );
+    qb.andWhere("sku.categoryId IN (:...categoryIds)", {
+      categoryIds: filters.categoryIds,
+    });
   }
   if (filters.search) {
-    qb.leftJoin("t.sku", "sku_search").andWhere(
-      "sku_search.name ILIKE :search",
-      { search: `%${filters.search}%` },
-    );
+    qb.andWhere("sku.name ILIKE :search", {
+      search: `%${filters.search}%`,
+    });
   }
 
   return qb;

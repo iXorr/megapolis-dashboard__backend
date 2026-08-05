@@ -14,6 +14,7 @@ import {
   TopVenuesDto,
 } from "./dto/dashboard.dto";
 import { PaginatedMeta } from "../../common/dto/pagination.dto";
+import { roundCurrency } from "../../common/utils/uuid.utils";
 import { applyFilters } from "./utils/dashboard-filters.utils";
 import {
   formatDateKey,
@@ -90,7 +91,7 @@ export class DashboardService {
     >();
 
     for (const row of rows) {
-      const rev = Math.round(parseFloat(row.revenue) * 100) / 100;
+      const rev = roundCurrency(parseFloat(row.revenue));
       const dateKey = formatDateKey(row.date, granularity);
       const entry = grouped.get(dateKey) ?? { total: 0, byType: {} };
       entry.total += rev;
@@ -102,12 +103,9 @@ export class DashboardService {
 
     return Array.from(grouped.entries()).map(([date, v]) => ({
       date,
-      total: Math.round(v.total * 100) / 100,
+      total: roundCurrency(v.total),
       byType: Object.fromEntries(
-        Object.entries(v.byType).map(([k, val]) => [
-          k,
-          Math.round(val * 100) / 100,
-        ]),
+        Object.entries(v.byType).map(([k, val]) => [k, roundCurrency(val)]),
       ),
     }));
   }
@@ -145,7 +143,7 @@ export class DashboardService {
         id: r.venue_id,
         name: r.venue_name,
         type: r.venue_type,
-        revenue: Math.round(rev * 100) / 100,
+        revenue: roundCurrency(rev),
         margin: rev ? Math.round(((rev - cst) / rev) * 1000) / 10 : 0,
       };
     });
@@ -175,7 +173,7 @@ export class DashboardService {
     const byType = new Map<string, { name: string; value: number }[]>();
 
     for (const r of rows) {
-      const rev = Math.round(parseFloat(r.revenue) * 100) / 100;
+      const rev = roundCurrency(parseFloat(r.revenue));
       const children = byType.get(r.venue_type) ?? [];
       children.push({ name: r.category_name, value: rev });
       byType.set(r.venue_type, children);
@@ -185,7 +183,7 @@ export class DashboardService {
       const total = children.reduce((sum, c) => sum + c.value, 0);
       return {
         name: type,
-        value: Math.round(total * 100) / 100,
+        value: roundCurrency(total),
         children,
       };
     });
@@ -216,7 +214,7 @@ export class DashboardService {
       dayOfWeek: parseInt(r.day_of_week, 10),
       hour: parseInt(r.hour, 10),
       orderCount: parseInt(r.order_count, 10),
-      revenue: Math.round(parseFloat(r.revenue) * 100) / 100,
+      revenue: roundCurrency(parseFloat(r.revenue)),
     }));
   }
 
@@ -255,7 +253,7 @@ export class DashboardService {
         id: r.sku_id,
         name: r.sku_name,
         categoryName: r.category_name,
-        price: Math.round(parseFloat(r.price) * 100) / 100,
+        price: roundCurrency(parseFloat(r.price)),
         margin: rev ? Math.round(((rev - cst) / rev) * 1000) / 10 : 0,
         soldCount: parseInt(r.sold_count, 10),
       };
@@ -307,8 +305,8 @@ export class DashboardService {
       "cnt",
     );
 
-    const totalResult: { cnt?: string }[] = await countQb.getRawMany();
-    const total = totalResult.length;
+    const totalRow = await countQb.getRawOne<{ cnt: string }>();
+    const total = parseInt(totalRow?.cnt ?? "0", 10) || 0;
 
     const rows: Record<string, string>[] = await qb.getRawMany();
 
@@ -316,10 +314,10 @@ export class DashboardService {
       const rev = parseFloat(r.revenue) || 0;
       const cst = parseFloat(r.cost) || 0;
       const result: Record<string, unknown> = {
-        revenue: Math.round(rev * 100) / 100,
+        revenue: roundCurrency(rev),
         quantity: parseInt(r.quantity, 10),
         margin: rev ? Math.round(((rev - cst) / rev) * 1000) / 10 : 0,
-        marginAmount: Math.round((rev - cst) * 100) / 100,
+        marginAmount: roundCurrency(rev - cst),
       };
       if (groupBy === TableGroupBy.VENUE) {
         result.venueName = r.venue_name;
@@ -424,7 +422,7 @@ export class DashboardService {
       return {
         label: r.label,
         id: r.id,
-        revenue: Math.round(rev * 100) / 100,
+        revenue: roundCurrency(rev),
         orderCount: parseInt(r.order_count, 10),
         margin: rev ? Math.round(((rev - cst) / rev) * 1000) / 10 : 0,
       };
@@ -441,10 +439,6 @@ export class DashboardService {
     const baseQb = this.txnRepo
       .createQueryBuilder("t")
       .leftJoin("t.venue", "v");
-
-    if (filters.categoryIds?.length) {
-      baseQb.leftJoin("t.sku", "sku");
-    }
 
     const result = await applyFilters(
       baseQb
@@ -484,7 +478,7 @@ export class DashboardService {
       ? {
           id: row.id,
           name: row.name,
-          revenue: Math.round(parseFloat(row.revenue) * 100) / 100,
+          revenue: roundCurrency(parseFloat(row.revenue)),
         }
       : { id: "", name: "", revenue: 0 };
   }
@@ -513,7 +507,7 @@ export class DashboardService {
   }
 
   private kpiItem(current: number, previous: number) {
-    const value = Math.round(current * 100) / 100;
+    const value = roundCurrency(current);
     const delta =
       previous !== 0
         ? Math.round(((current - previous) / previous) * 1000) / 10

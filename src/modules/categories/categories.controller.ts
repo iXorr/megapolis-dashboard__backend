@@ -1,7 +1,8 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
-import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Category } from "../../database/entities/category.entity";
 import { CategoriesService } from "./categories.service";
+import { QueryCategoriesDto } from "./dto/query-categories.dto";
 
 @ApiTags("Categories")
 @Controller("categories")
@@ -10,21 +11,14 @@ export class CategoriesController {
 
   @Get()
   @ApiOperation({ summary: "Список категорий с пагинацией" })
-  @ApiQuery({ name: "search", required: false })
-  @ApiQuery({ name: "page", required: false, type: Number })
-  @ApiQuery({ name: "limit", required: false, type: Number })
-  findAll(
-    @Query("search") search?: string,
-    @Query("page") page?: string,
-    @Query("limit") limit?: string,
-  ): Promise<{
+  findAll(@Query() query: QueryCategoriesDto): Promise<{
     data: Category[];
     meta: { page: number; limit: number; total: number; totalPages: number };
   }> {
     return this.categoriesService.findAll(
-      search,
-      Number(page) || 1,
-      Number(limit) || 20,
+      query.search,
+      query.page ?? 1,
+      query.limit ?? 20,
     );
   }
 

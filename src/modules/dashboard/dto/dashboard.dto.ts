@@ -11,7 +11,7 @@ import {
   Max,
 } from "class-validator";
 import { DateRangeDto } from "../../../common/dto/date-range.dto";
-import { PaginationDto, SortOrder } from "../../../common/dto/pagination.dto";
+import { SortOrder } from "../../../common/dto/pagination.dto";
 
 const toArray = ({ value }: { value: unknown }): unknown[] =>
   value == null ? [] : Array.isArray(value) ? value : [value];
@@ -204,49 +204,25 @@ export enum TableGroupBy {
   SKU = "sku",
 }
 
-export class DashboardTableDto extends PaginationDto {
-  @ApiPropertyOptional({
-    description: "Начало периода (ISO 8601)",
-    example: "2026-01-01",
-  })
+export class DashboardTableDto extends DashboardFiltersDto {
+  @ApiPropertyOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   @IsOptional()
-  dateFrom?: string;
-
-  @ApiPropertyOptional({
-    description: "Конец периода (ISO 8601)",
-    example: "2026-12-31",
-  })
-  @IsOptional()
-  dateTo?: string;
-
-  @ApiPropertyOptional({
-    isArray: true,
-    enum: ["restaurant", "bar", "cinema", "food_court"],
-  })
-  @Transform(toArray)
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  venueTypes?: string[];
-
-  @ApiPropertyOptional({ isArray: true })
-  @Transform(toArray)
-  @IsArray()
-  @IsUUID("4", { each: true })
-  @IsOptional()
-  venueIds?: string[];
-
-  @ApiPropertyOptional({ isArray: true })
-  @Transform(toArray)
-  @IsArray()
-  @IsUUID("4", { each: true })
-  @IsOptional()
-  categoryIds?: string[];
+  page?: number = 1;
 
   @ApiPropertyOptional()
-  @IsString()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   @IsOptional()
-  search?: string;
+  limit?: number = 20;
+
+  @ApiPropertyOptional({ description: "Поле сортировки" })
+  @IsOptional()
+  sortBy?: string;
 
   @ApiPropertyOptional({
     enum: TableGroupBy,
@@ -260,6 +236,10 @@ export class DashboardTableDto extends PaginationDto {
   @IsEnum(SortOrder)
   @IsOptional()
   sortOrder?: SortOrder = SortOrder.DESC;
+
+  get skip(): number {
+    return (this.page! - 1) * this.limit!;
+  }
 }
 
 export class TableRowDto {

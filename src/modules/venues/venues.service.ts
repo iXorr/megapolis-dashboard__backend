@@ -8,11 +8,7 @@ import { FindManyOptions, ILike, Repository } from "typeorm";
 import { Venue } from "../../database/entities/venue.entity";
 import { CreateVenueDto, QueryVenuesDto } from "./dto/venue.dto";
 
-function isValidUUID(str: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    str,
-  );
-}
+import { isValidUUID } from "../../common/utils/uuid.utils";
 
 @Injectable()
 export class VenuesService {

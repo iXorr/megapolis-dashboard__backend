@@ -8,6 +8,7 @@ import {
   Length,
 } from "class-validator";
 import { VenueType } from "../../../database/entities/venue.entity";
+import { PaginationDto } from "../../../common/dto/pagination.dto";
 
 export class CreateVenueDto {
   @ApiProperty({ example: "Ресторан «Волна»" })
@@ -42,15 +43,7 @@ export class CreateVenueDto {
   openedAt?: string;
 }
 
-export class QueryVenuesDto {
-  @ApiPropertyOptional({ description: "Номер страницы", default: 1 })
-  @IsOptional()
-  page?: number = 1;
-
-  @ApiPropertyOptional({ description: "Записей на странице", default: 20 })
-  @IsOptional()
-  limit?: number = 20;
-
+export class QueryVenuesDto extends PaginationDto {
   @ApiPropertyOptional({ enum: VenueType })
   @IsOptional()
   @IsEnum(VenueType)
@@ -65,17 +58,4 @@ export class QueryVenuesDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  @ApiPropertyOptional({ default: "name" })
-  @IsOptional()
-  @IsString()
-  sortBy?: string = "name";
-
-  @ApiPropertyOptional({ enum: ["asc", "desc"], default: "asc" })
-  @IsOptional()
-  sortOrder?: "asc" | "desc" = "asc";
-
-  get skip(): number {
-    return (this.page! - 1) * this.limit!;
-  }
 }

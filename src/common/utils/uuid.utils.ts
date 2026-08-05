@@ -1,0 +1,9 @@
+export function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    str,
+  );
+}
+
+export function roundCurrency(n: number): number {
+  return Math.round(n * 100) / 100;
+}

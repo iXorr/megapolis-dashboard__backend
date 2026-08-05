@@ -29,7 +29,7 @@ async function seed() {
   const venues: Partial<Venue>[] = [];
 
   for (const city of CITIES) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       let name: string;
       let type: VenueType;
       switch (i % 4) {
@@ -132,6 +132,10 @@ async function seed() {
   await ds.destroy();
 }
 
-seed().catch(() => {
-  process.exit(1);
-});
+seed()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch(() => {
+    process.exit(1);
+  });

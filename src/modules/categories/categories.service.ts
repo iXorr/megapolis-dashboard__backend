@@ -7,11 +7,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { ILike, Repository } from "typeorm";
 import { Category } from "../../database/entities/category.entity";
 
-function isValidUUID(str: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    str,
-  );
-}
+import { isValidUUID } from "../../common/utils/uuid.utils";
 
 @Injectable()
 export class CategoriesService {

@@ -9,7 +9,15 @@ export function formatDateKey(
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   if (granularity === TrendGranularity.MONTH) return `${y}-${m}`;
-  if (granularity === TrendGranularity.WEEK) return `${y}-${m}-${day}`;
+  if (granularity === TrendGranularity.WEEK) {
+    const dayOfWeek = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((dayOfWeek + 6) % 7));
+    const my = monday.getFullYear();
+    const mm = String(monday.getMonth() + 1).padStart(2, "0");
+    const md = String(monday.getDate()).padStart(2, "0");
+    return `${my}-${mm}-${md}`;
+  }
   return `${y}-${m}-${day}`;
 }
 

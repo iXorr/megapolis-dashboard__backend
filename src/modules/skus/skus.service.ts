@@ -8,11 +8,7 @@ import { ILike, Repository } from "typeorm";
 import { Sku } from "../../database/entities/sku.entity";
 import { QuerySkusDto } from "./dto/sku.dto";
 
-function isValidUUID(str: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    str,
-  );
-}
+import { isValidUUID } from "../../common/utils/uuid.utils";
 
 @Injectable()
 export class SkusService {
