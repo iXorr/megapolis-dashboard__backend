@@ -230,6 +230,7 @@ export class DashboardService {
     }[] = await applyFilters(
       this.txnRepo
         .createQueryBuilder("t")
+        .leftJoin("t.venue", "v")
         .leftJoin("t.sku", "sku")
         .leftJoin("sku.category", "cat")
         .select("sku.id", "sku_id")

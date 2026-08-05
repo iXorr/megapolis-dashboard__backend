@@ -35,7 +35,7 @@ export function applyFilters(
     });
   }
   if (filters.search) {
-    qb.andWhere("sku.name ILIKE :search", {
+    qb.andWhere("(sku.name ILIKE :search OR v.name ILIKE :search)", {
       search: `%${filters.search}%`,
     });
   }
