@@ -60,5 +60,4 @@ export class VenuesService {
       .getRawMany<{ type: string }>();
     return rows.map((r) => r.type);
   }
-
 }

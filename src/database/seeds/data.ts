@@ -50,7 +50,6 @@ export const CINEMA_NAMES = [
   "Ретро",
 ];
 
-
 export const CATEGORY_NAMES = [
   "Горячие блюда",
   "Супы",
