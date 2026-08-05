@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, SelectQueryBuilder } from "typeorm";
+import { Repository } from "typeorm";
 import { Transaction } from "../../database/entities/transaction.entity";
 import { Venue } from "../../database/entities/venue.entity";
 import {
@@ -14,6 +14,17 @@ import {
   TopVenuesDto,
 } from "./dto/dashboard.dto";
 import { PaginatedMeta } from "../../common/dto/pagination.dto";
+import { applyFilters } from "./utils/dashboard-filters.utils";
+import {
+  formatDateKey,
+  resolveDateRange,
+  shiftPeriodBack,
+} from "./utils/dashboard-date.utils";
+import {
+  addTableSelectColumns,
+  addTableGroupBy,
+  getTableGroupCols,
+} from "./utils/dashboard-table.utils";
 
 interface KpiResult {
   revenue: number;
@@ -43,8 +54,8 @@ export class DashboardService {
   ) {}
 
   async getKpi(filters: DashboardFiltersDto) {
-    const { dateFrom, dateTo } = this.resolveDateRange(filters);
-    const prev = this.shiftPeriodBack(dateFrom, dateTo);
+    const { dateFrom, dateTo } = resolveDateRange(filters);
+    const prev = shiftPeriodBack(dateFrom, dateTo);
 
     const [current, topVenue] = await Promise.all([
       this.aggregateKpi(dateFrom, dateTo, filters),
@@ -58,7 +69,7 @@ export class DashboardService {
   async getRevenueTrend(filters: RevenueTrendDto) {
     const granularity = filters.granularity ?? TrendGranularity.DAY;
 
-    const rows: TrendRow[] = await this.applyFilters(
+    const rows: TrendRow[] = await applyFilters(
       this.txnRepo
         .createQueryBuilder("t")
         .leftJoin("t.venue", "v")
@@ -80,7 +91,7 @@ export class DashboardService {
 
     for (const row of rows) {
       const rev = Math.round(parseFloat(row.revenue) * 100) / 100;
-      const dateKey = this.formatDateKey(row.date, granularity);
+      const dateKey = formatDateKey(row.date, granularity);
       const entry = grouped.get(dateKey) ?? { total: 0, byType: {} };
       entry.total += rev;
       if (row.type) {
@@ -110,7 +121,7 @@ export class DashboardService {
       venue_type: string;
       revenue: string;
       cost: string;
-    }[] = await this.applyFilters(
+    }[] = await applyFilters(
       this.txnRepo
         .createQueryBuilder("t")
         .leftJoin("t.venue", "v")
@@ -145,7 +156,7 @@ export class DashboardService {
       venue_type: string;
       category_name: string;
       revenue: string;
-    }[] = await this.applyFilters(
+    }[] = await applyFilters(
       this.txnRepo
         .createQueryBuilder("t")
         .leftJoin("t.venue", "v")
@@ -186,7 +197,7 @@ export class DashboardService {
       hour: string;
       order_count: string;
       revenue: string;
-    }[] = await this.applyFilters(
+    }[] = await applyFilters(
       this.txnRepo
         .createQueryBuilder("t")
         .leftJoin("t.venue", "v")
@@ -218,7 +229,7 @@ export class DashboardService {
       revenue: string;
       cost: string;
       sold_count: string;
-    }[] = await this.applyFilters(
+    }[] = await applyFilters(
       this.txnRepo
         .createQueryBuilder("t")
         .leftJoin("t.sku", "sku")
@@ -274,11 +285,11 @@ export class DashboardService {
       .leftJoin("t.sku", "sku")
       .leftJoin("sku.category", "cat");
 
-    this.applyFilters(qb, filters);
-    this.applyFilters(countQb, filters);
+    applyFilters(qb, filters);
+    applyFilters(countQb, filters);
 
-    this.addTableSelectColumns(qb, groupBy);
-    this.addTableGroupBy(qb, groupBy);
+    addTableSelectColumns(qb, groupBy);
+    addTableGroupBy(qb, groupBy);
 
     qb.addSelect("SUM(t.revenue)", "revenue")
       .addSelect("SUM(t.quantity)", "quantity")
@@ -290,11 +301,9 @@ export class DashboardService {
       .limit(limit)
       .orderBy(orderBy, orderDir);
 
-    this.addTableGroupBy(countQb, groupBy);
+    addTableGroupBy(countQb, groupBy);
     countQb.select(
-      "COUNT(DISTINCT " +
-        this.getTableGroupCols(groupBy).join(" || '-' || ") +
-        ")",
+      "COUNT(DISTINCT " + getTableGroupCols(groupBy).join(" || '-' || ") + ")",
       "cnt",
     );
 
@@ -392,7 +401,7 @@ export class DashboardService {
     selectParts.push("COUNT(t.id) AS order_count");
     selectParts.push("SUM(t.cost) AS cost");
 
-    this.applyFilters(qb, filters);
+    applyFilters(qb, filters);
 
     if (groupCols.length) {
       groupCols.reduce(
@@ -422,130 +431,7 @@ export class DashboardService {
     });
   }
 
-  /* ───── table helpers ───── */
-
-  private addTableSelectColumns(
-    qb: SelectQueryBuilder<Transaction>,
-    groupBy?: TableGroupBy,
-  ): void {
-    switch (groupBy) {
-      case TableGroupBy.VENUE:
-        qb.select("v.name", "venue_name");
-        break;
-      case TableGroupBy.CATEGORY:
-        qb.select("cat.name", "category_name");
-        break;
-      case TableGroupBy.SKU:
-        qb.select("sku.name", "sku_name");
-        break;
-      default:
-        qb.select("v.name", "venue_name")
-          .addSelect("cat.name", "category_name")
-          .addSelect("sku.name", "sku_name");
-    }
-  }
-
-  private addTableGroupBy(
-    qb: SelectQueryBuilder<Transaction>,
-    groupBy?: TableGroupBy,
-  ): void {
-    const cols = this.getTableGroupCols(groupBy);
-    for (let i = 0; i < cols.length; i++) {
-      if (i === 0) {
-        qb.groupBy(cols[i]);
-      } else {
-        qb.addGroupBy(cols[i]);
-      }
-    }
-  }
-
-  private getTableGroupCols(groupBy?: TableGroupBy): string[] {
-    switch (groupBy) {
-      case TableGroupBy.VENUE:
-        return ["v.id", "v.name"];
-      case TableGroupBy.CATEGORY:
-        return ["cat.id", "cat.name"];
-      case TableGroupBy.SKU:
-        return ["sku.id", "sku.name"];
-      default:
-        return ["v.id", "v.name", "cat.id", "cat.name", "sku.id", "sku.name"];
-    }
-  }
-
-  /* ───── helpers ───── */
-
-  private formatDateKey(raw: string, granularity: TrendGranularity): string {
-    const d = new Date(raw);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    if (granularity === TrendGranularity.MONTH) return `${y}-${m}`;
-    if (granularity === TrendGranularity.WEEK) return `${y}-${m}-${day}`;
-    return `${y}-${m}-${day}`;
-  }
-
-  private resolveDateRange(filters: DashboardFiltersDto): {
-    dateFrom: Date;
-    dateTo: Date;
-  } {
-    const to = filters.dateTo ? new Date(filters.dateTo) : new Date();
-    to.setHours(23, 59, 59, 999);
-
-    const from = filters.dateFrom
-      ? new Date(filters.dateFrom)
-      : new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
-    from.setHours(0, 0, 0, 0);
-
-    return { dateFrom: from, dateTo: to };
-  }
-
-  private shiftPeriodBack(from: Date, to: Date): { from: Date; to: Date } {
-    const duration = to.getTime() - from.getTime();
-    return {
-      from: new Date(from.getTime() - duration),
-      to: new Date(to.getTime() - duration),
-    };
-  }
-
-  private applyFilters(
-    qb: SelectQueryBuilder<Transaction>,
-    filters: DashboardFiltersDto,
-  ): SelectQueryBuilder<Transaction> {
-    const { dateFrom, dateTo } = this.resolveDateRange(filters);
-    qb.andWhere("t.transactedAt BETWEEN :dateFrom AND :dateTo", {
-      dateFrom,
-      dateTo,
-    });
-
-    if (filters.venueTypes?.length) {
-      qb.andWhere("v.type IN (:...venueTypes)", {
-        venueTypes: filters.venueTypes,
-      });
-    }
-    if (filters.venueIds?.length) {
-      qb.andWhere("v.id IN (:...venueIds)", {
-        venueIds: filters.venueIds,
-      });
-    }
-    if (filters.categoryIds?.length) {
-      qb.leftJoin("t.sku", "sku").andWhere(
-        "sku.categoryId IN (:...categoryIds)",
-        {
-          categoryIds: filters.categoryIds,
-        },
-      );
-    }
-    if (filters.search) {
-      qb.leftJoin("t.sku", "sku_search").andWhere(
-        "sku_search.name ILIKE :search",
-        {
-          search: `%${filters.search}%`,
-        },
-      );
-    }
-
-    return qb;
-  }
+  /* ───── KPI helpers ───── */
 
   private async aggregateKpi(
     from: Date,
@@ -560,7 +446,7 @@ export class DashboardService {
       baseQb.leftJoin("t.sku", "sku");
     }
 
-    const result = await this.applyFilters(
+    const result = await applyFilters(
       baseQb
         .select("COALESCE(SUM(t.revenue), 0)", "revenue")
         .addSelect("COALESCE(COUNT(t.id), 0)", "orderCount")
@@ -580,7 +466,7 @@ export class DashboardService {
     to: Date,
     filters: DashboardFiltersDto,
   ): Promise<TopVenueResult> {
-    const row = await this.applyFilters(
+    const row = await applyFilters(
       this.txnRepo
         .createQueryBuilder("t")
         .leftJoin("t.venue", "v")
