@@ -36,7 +36,7 @@ export class DashboardFiltersDto extends DateRangeDto {
   @ApiPropertyOptional({
     description: "Типы заведений",
     isArray: true,
-    enum: ["restaurant", "bar", "cinema", "food_court"],
+    enum: ["restaurant", "bar", "cinema"],
   })
   @Transform(toArray)
   @IsArray()

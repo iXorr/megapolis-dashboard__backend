@@ -50,18 +50,6 @@ export const CINEMA_NAMES = [
   "Ретро",
 ];
 
-export const FOODCOURT_NAMES = [
-  "Вкусно",
-  "Аппетит",
-  "Сытый",
-  "Лавка",
-  "ФудХолл",
-  "Базар",
-  "ГастроПарк",
-  "Обжора",
-  "Сковорода",
-  "Повар",
-];
 
 export const CATEGORY_NAMES = [
   "Горячие блюда",

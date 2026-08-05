@@ -5,7 +5,6 @@ export enum VenueType {
   RESTAURANT = "restaurant",
   BAR = "bar",
   CINEMA = "cinema",
-  FOOD_COURT = "food_court",
 }
 
 @Entity("venues")

@@ -9,7 +9,8 @@ import {
   CATEGORY_NAMES,
   CINEMA_NAMES,
   CITIES,
-  FOODCOURT_NAMES,
+
+
   RESTAURANT_NAMES,
   SKU_BASES,
   SKU_PREFIXES,
@@ -29,10 +30,10 @@ async function seed() {
   const venues: Partial<Venue>[] = [];
 
   for (const city of CITIES) {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       let name: string;
       let type: VenueType;
-      switch (i % 4) {
+      switch (i % 3) {
         case 0:
           name = pick(RESTAURANT_NAMES);
           type = VenueType.RESTAURANT;
@@ -41,13 +42,9 @@ async function seed() {
           name = pick(BAR_NAMES);
           type = VenueType.BAR;
           break;
-        case 2:
+        default:
           name = pick(CINEMA_NAMES);
           type = VenueType.CINEMA;
-          break;
-        default:
-          name = pick(FOODCOURT_NAMES);
-          type = VenueType.FOOD_COURT;
           break;
       }
       const nameSet = new Set(
