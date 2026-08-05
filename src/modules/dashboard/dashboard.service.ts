@@ -268,7 +268,18 @@ export class DashboardService {
     const groupBy = filters.groupBy;
     const defaultSortBy = groupBy ? `${groupBy}_name` : "revenue";
 
-    const orderBy = filters.sortBy ?? defaultSortBy;
+    const rawSortBy = filters.sortBy ?? defaultSortBy;
+    const orderBy = rawSortBy.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    const allowedSortCols = new Set(
+      (groupBy ? [groupBy] : ["venue", "category", "sku"]).flatMap((g) =>
+        g === "venue" ? [`${g}_name`, `${g}_city`] : [`${g}_name`],
+      ),
+    );
+    allowedSortCols.add("revenue");
+    allowedSortCols.add("quantity");
+    allowedSortCols.add("margin");
+    allowedSortCols.add("margin_amount");
+    const finalOrderBy = allowedSortCols.has(orderBy) ? orderBy : defaultSortBy;
     const orderDir: "ASC" | "DESC" =
       filters.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
 
@@ -292,15 +303,19 @@ export class DashboardService {
 
     qb.addSelect("SUM(t.revenue)", "revenue")
       .addSelect("SUM(t.quantity)", "quantity")
-      .addSelect("SUM(t.cost)", "cost");
+      .addSelect("SUM(t.cost)", "cost")
+      .addSelect(
+        "(SUM(t.revenue) - SUM(t.cost)) / NULLIF(SUM(t.revenue), 0)",
+        "margin",
+      )
+      .addSelect("SUM(t.revenue) - SUM(t.cost)", "margin_amount");
 
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
     qb.offset((page - 1) * limit)
       .limit(limit)
-      .orderBy(orderBy, orderDir);
+      .orderBy(finalOrderBy, orderDir);
 
-    addTableGroupBy(countQb, groupBy);
     countQb.select(
       "COUNT(DISTINCT " + getTableGroupCols(groupBy).join(" || '-' || ") + ")",
       "cnt",
@@ -322,6 +337,7 @@ export class DashboardService {
       };
       if (groupBy === TableGroupBy.VENUE) {
         result.venueName = r.venue_name;
+        result.venueCity = r.venue_city;
       } else if (groupBy === TableGroupBy.CATEGORY) {
         result.categoryName = r.category_name;
       } else if (groupBy === TableGroupBy.SKU) {

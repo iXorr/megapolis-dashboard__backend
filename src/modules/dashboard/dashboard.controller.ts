@@ -12,11 +12,9 @@ import {
   RevenueTrendItemDto,
   ScatterItemDto,
   SunburstItemDto,
-  TableRowDto,
   TopVenueItemDto,
   TopVenuesDto,
 } from "./dto/dashboard.dto";
-import { ApiPaginatedResponse } from "../../common/decorators/api-paginated-response";
 import { PaginatedMeta } from "../../common/dto/pagination.dto";
 
 @ApiTags("Dashboard")
@@ -91,7 +89,6 @@ export class DashboardController {
     description:
       "Пагинированная таблица с опциональной группировкой по заведению/категории/SKU",
   })
-  @ApiPaginatedResponse(TableRowDto)
   getTable(@Query() filters: DashboardTableDto): Promise<{
     data: Record<string, unknown>[];
     meta: PaginatedMeta;

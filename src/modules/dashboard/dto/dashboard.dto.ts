@@ -252,29 +252,6 @@ export class DashboardTableDto extends DashboardFiltersDto {
   }
 }
 
-export class TableRowDto {
-  @ApiPropertyOptional()
-  venueName?: string;
-
-  @ApiPropertyOptional()
-  categoryName?: string;
-
-  @ApiPropertyOptional()
-  skuName?: string;
-
-  @ApiProperty({ example: 450000 })
-  revenue!: number;
-
-  @ApiProperty({ example: 375 })
-  quantity!: number;
-
-  @ApiProperty({ example: 48.5 })
-  margin!: number;
-
-  @ApiProperty({ example: 218250 })
-  marginAmount!: number;
-}
-
 export enum DrilldownLevel {
   NETWORK = "network",
   VENUE = "venue",

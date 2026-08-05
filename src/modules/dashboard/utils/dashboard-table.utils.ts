@@ -8,7 +8,7 @@ export function addTableSelectColumns(
 ): void {
   switch (groupBy) {
     case TableGroupBy.VENUE:
-      qb.select("v.name", "venue_name");
+      qb.select("v.name", "venue_name").addSelect("v.city", "venue_city");
       break;
     case TableGroupBy.CATEGORY:
       qb.select("cat.name", "category_name");
@@ -40,7 +40,7 @@ export function addTableGroupBy(
 export function getTableGroupCols(groupBy?: TableGroupBy): string[] {
   switch (groupBy) {
     case TableGroupBy.VENUE:
-      return ["v.id", "v.name"];
+      return ["v.id", "v.name", "v.city"];
     case TableGroupBy.CATEGORY:
       return ["cat.id", "cat.name"];
     case TableGroupBy.SKU:
