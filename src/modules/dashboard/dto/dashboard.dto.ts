@@ -1,6 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsArray, IsEnum, IsOptional, IsString, IsUUID } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  Max,
+} from "class-validator";
 import { DateRangeDto } from "../../../common/dto/date-range.dto";
+import { PaginationDto, SortOrder } from "../../../common/dto/pagination.dto";
+
+const toArray = ({ value }: { value: unknown }): unknown[] =>
+  value == null ? [] : Array.isArray(value) ? value : [value];
 
 export enum TrendGranularity {
   DAY = "day",
@@ -14,6 +28,7 @@ export class DashboardFiltersDto extends DateRangeDto {
     isArray: true,
     enum: ["restaurant", "bar", "cinema", "food_court"],
   })
+  @Transform(toArray)
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
@@ -23,12 +38,14 @@ export class DashboardFiltersDto extends DateRangeDto {
     description: "ID конкретных заведений",
     isArray: true,
   })
+  @Transform(toArray)
   @IsArray()
   @IsUUID("4", { each: true })
   @IsOptional()
   venueIds?: string[];
 
   @ApiPropertyOptional({ description: "ID категорий", isArray: true })
+  @Transform(toArray)
   @IsArray()
   @IsUUID("4", { each: true })
   @IsOptional()
@@ -102,4 +119,206 @@ export class RevenueTrendItemDto {
 
   @ApiProperty({ example: { restaurant: 300000, bar: 120000 } })
   byType!: Record<string, number>;
+}
+
+export class TopVenuesDto extends DashboardFiltersDto {
+  @ApiPropertyOptional({
+    description: "Кол-во возвращаемых заведений",
+    default: 10,
+    minimum: 1,
+    maximum: 50,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  @IsOptional()
+  limit?: number = 10;
+}
+
+export class TopVenueItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  type!: string;
+
+  @ApiProperty({ example: 3200000 })
+  revenue!: number;
+
+  @ApiProperty({ example: 45.2 })
+  margin!: number;
+}
+
+export class SunburstItemDto {
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  value!: number;
+
+  @ApiPropertyOptional({ type: [Object], isArray: true })
+  children?: SunburstItemDto[];
+}
+
+export class HeatmapItemDto {
+  @ApiProperty({ example: 1 })
+  dayOfWeek!: number;
+
+  @ApiProperty({ example: 12 })
+  hour!: number;
+
+  @ApiProperty({ example: 340 })
+  orderCount!: number;
+
+  @ApiProperty({ example: 145000 })
+  revenue!: number;
+}
+
+export class ScatterItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ example: "Стейк Рибай" })
+  name!: string;
+
+  @ApiProperty({ example: "Горячие блюда" })
+  categoryName!: string;
+
+  @ApiProperty({ example: 1200 })
+  price!: number;
+
+  @ApiProperty({ example: 48.5 })
+  margin!: number;
+
+  @ApiProperty({ example: 230 })
+  soldCount!: number;
+}
+
+export enum TableGroupBy {
+  VENUE = "venue",
+  CATEGORY = "category",
+  SKU = "sku",
+}
+
+export class DashboardTableDto extends PaginationDto {
+  @ApiPropertyOptional({
+    description: "Начало периода (ISO 8601)",
+    example: "2026-01-01",
+  })
+  @IsOptional()
+  dateFrom?: string;
+
+  @ApiPropertyOptional({
+    description: "Конец периода (ISO 8601)",
+    example: "2026-12-31",
+  })
+  @IsOptional()
+  dateTo?: string;
+
+  @ApiPropertyOptional({
+    isArray: true,
+    enum: ["restaurant", "bar", "cinema", "food_court"],
+  })
+  @Transform(toArray)
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  venueTypes?: string[];
+
+  @ApiPropertyOptional({ isArray: true })
+  @Transform(toArray)
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  venueIds?: string[];
+
+  @ApiPropertyOptional({ isArray: true })
+  @Transform(toArray)
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  categoryIds?: string[];
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({
+    enum: TableGroupBy,
+    description: "Поле для группировки",
+  })
+  @IsEnum(TableGroupBy)
+  @IsOptional()
+  groupBy?: TableGroupBy;
+
+  @ApiPropertyOptional({ enum: SortOrder, default: SortOrder.DESC })
+  @IsEnum(SortOrder)
+  @IsOptional()
+  sortOrder?: SortOrder = SortOrder.DESC;
+}
+
+export class TableRowDto {
+  @ApiPropertyOptional()
+  venueName?: string;
+
+  @ApiPropertyOptional()
+  categoryName?: string;
+
+  @ApiPropertyOptional()
+  skuName?: string;
+
+  @ApiProperty({ example: 450000 })
+  revenue!: number;
+
+  @ApiProperty({ example: 375 })
+  quantity!: number;
+
+  @ApiProperty({ example: 48.5 })
+  margin!: number;
+
+  @ApiProperty({ example: 218250 })
+  marginAmount!: number;
+}
+
+export enum DrilldownLevel {
+  NETWORK = "network",
+  VENUE = "venue",
+  CATEGORY = "category",
+  SKU = "sku",
+}
+
+export class DrilldownDto extends DashboardFiltersDto {
+  @ApiProperty({ enum: DrilldownLevel, description: "Уровень детализации" })
+  @IsEnum(DrilldownLevel)
+  level!: DrilldownLevel;
+
+  @ApiPropertyOptional({
+    description:
+      "ID родительской сущности (type для level=venue, venueId для level=category, categoryId для level=sku)",
+  })
+  @IsString()
+  @IsOptional()
+  parentId?: string;
+}
+
+export class DrilldownItemDto {
+  @ApiProperty({ example: "Рестораны" })
+  label!: string;
+
+  @ApiProperty({ example: "2026-08-01" })
+  id?: string;
+
+  @ApiProperty({ example: 7500000 })
+  revenue!: number;
+
+  @ApiProperty({ example: 3200 })
+  orderCount!: number;
+
+  @ApiProperty({ example: 44.5 })
+  margin!: number;
 }
