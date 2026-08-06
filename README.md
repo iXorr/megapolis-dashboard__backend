@@ -89,7 +89,7 @@ npm run start:dev
 
 ## API
 
-Все эндпойнты документированы в Swagger: **`http://localhost:3000/api/docs`**
+Все эндпойнты документированы в Swagger: **`URL/api/docs`**
 
 Базовый путь: `/api`. 
 
